@@ -28,8 +28,8 @@
 #ifdef TAUCS
    #include "tau.h"
 #endif
-#ifdef PARDISO
-   #include "pardiso.h"
+#ifdef PARDISO_MPI
+   #include "mkl_pardiso.h"
 #endif
 
 void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
@@ -517,7 +517,7 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 	  }
 	  else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 	      pardiso_factor(ad,au,adb,aub,&sigma,icol,irow,neq,nzs,
 			     &symmetryflag,&inputformat,jq,&nzs[2]);
 #else
@@ -552,7 +552,7 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 		  }
 		  else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 		      pardiso_solve(b,neq,&symmetryflag,&nrhs);
 #endif
 		      
@@ -742,7 +742,7 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 		  }
 		  else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 		      pardiso_solve(b,neq,&symmetryflag,&nrhs);
 #endif
 		      
@@ -906,7 +906,7 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
     }
     else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
       pardiso_main(ad,au,adb,aub,&sigma,b,icol,irow,neq,nzs,
 		   &symmetryflag,&inputformat,jq,&nzs[2],&nrhs);
 #else

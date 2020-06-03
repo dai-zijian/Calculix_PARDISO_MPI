@@ -29,8 +29,8 @@
 #ifdef TAUCS
    #include "tau.h"
 #endif
-#ifdef PARDISO
-   #include "pardiso.h"
+#ifdef PARDISO_MPI
+   #include "mkl_pardiso.h"
 #endif
 
 #define max(a,b) ((a) >= (b) ? (a) : (b))
@@ -1069,7 +1069,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 	  }
 	  else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 	      pardiso_main(ad,au,adb,aub,&sigma,b,icol,irow,&neq[0],&nzs[0],
 			   &symmetryflag,&inputformat,jq,&nzs[2],&nrhs);
 #else
@@ -1120,7 +1120,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 	    }
 	    else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 	      pardiso_factor(adb,aub,adb,aub,&sigma,icol,irow,&neq[0],&nzs[0],
 			    &symmetryflag,&inputformat,jq,&nzs[0]);
 
@@ -2680,7 +2680,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 	  }
 	  else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 	      if(*ithermal<2){
 		  pardiso_main(ad,au,adb,aub,&sigma,b,icol,irow,&neq[0],&nzs[0],
 			       &symmetryflag,&inputformat,jq,&nzs[2],&nrhs);
@@ -2751,7 +2751,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 	      }
 	      else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 	        pardiso_solve(b,&neq[0],&symmetryflag,&nrhs);
 #endif
 	      }
@@ -3768,7 +3768,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
       }
       else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 	pardiso_cleanup(&neq[0],&symmetryflag);
 #endif
       }

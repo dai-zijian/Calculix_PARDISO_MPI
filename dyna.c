@@ -29,8 +29,8 @@
 #ifdef TAUCS
    #include "tau.h"
 #endif
-#ifdef PARDISO
-   #include "pardiso.h"
+#ifdef PARDISO_MPI
+   #include "mkl_pardiso.h"
 #endif
 
 void dyna(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp, ITG *ne, 
@@ -1113,7 +1113,7 @@ void dyna(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp, ITG *n
 #endif
       }
       else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 	  pardiso_factor(ad,au,adb,aub,&sigma,icol,irow,&neq[1],&nzs[1],
                          &symmetryflag,&inputformat,jq,&nzs[2]);
 #else
@@ -2075,7 +2075,7 @@ void dyna(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp, ITG *n
 #endif
       }
       else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 	  pardiso_cleanup(&neq[1],&symmetryflag);
 #endif
       }

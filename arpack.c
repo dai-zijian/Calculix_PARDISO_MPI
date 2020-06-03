@@ -34,8 +34,8 @@
 #ifdef MATRIXSTORAGE
    #include "matrixstorage.h"
 #endif
-#ifdef PARDISO
-   #include "pardiso.h"
+#ifdef PARDISO_MPI
+   #include "mkl_pardiso.h"
 #endif
 
 void arpack(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
@@ -576,7 +576,7 @@ void arpack(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
   }
   else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
     pardiso_factor(ad,au,adb,aub,&sigma,icol,irow,&neq[1],&nzs[1],
 		   &symmetryflag,&inputformat,jq,&nzs[2]);
 #else
@@ -647,7 +647,7 @@ void arpack(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 	  }
 	  else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 	    pardiso_solve(temp_array,&neq[1],&symmetryflag,&nrhs);
 #endif
 	  }
@@ -672,7 +672,7 @@ void arpack(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 	  }
 	  else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 	    pardiso_solve(&workd[ipntr[2]-1],&neq[1],&symmetryflag,&nrhs);
 #endif
 	  }
@@ -939,7 +939,7 @@ void arpack(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 	}
 	else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 	  pardiso_solve(z,&neq[1],&symmetryflag,&nrhs);
 #endif
 	  
@@ -1092,7 +1092,7 @@ void arpack(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
   }
   else if(*isolver==7){
-#ifdef PARDISO
+#ifdef PARDISO_MPI
       pardiso_cleanup(&neq[1],&symmetryflag);
 #endif
   }
