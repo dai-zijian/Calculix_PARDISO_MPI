@@ -19,8 +19,10 @@
   _set_output_format(_TWO_DIGIT_EXPONENT);
 #endif
 
-#ifdef CALCULIX_MPI
-#include <spoolesMPI.h>
+#ifdef PARDISO_MPI
+#include "mpi.h"
+#include "mkl.h"
+#include "mkl_cluster_sparse_solver.h"
 #endif
 
 #include <stdlib.h>
@@ -29,13 +31,16 @@
 #include <string.h>
 #include "CalculiX.h"
 
-#ifdef CALCULIX_MPI
+#ifdef PARDISO_MPI
+
 ITG myid = 0, nproc = 0;
 #endif
 
 int main(int argc,char *argv[])
 {
   
+mpi_calculix();
+
 FILE *f1;
     
 char *sideload=NULL, *set=NULL, *matname=NULL, *orname=NULL, *amname=NULL,
@@ -150,7 +155,7 @@ kode=0;
 
 #if defined(SGI)
  isolver=4;
-#elif defined(PARDISO)
+#elif defined(PARDISO_MPI)
  isolver=7;
 #elif defined(SPOOLES)
  isolver=0;
@@ -1615,9 +1620,92 @@ MPI_Finalize();
  calculix_freeExternalBehaviours();
 #endif /* CALCULIX_EXTERNAL_BEHAVIOURS_SUPPORT */
 
+printf ( "Sending status 1 to tell other ranks, that rank 0 is done");
+
+    int     mpi_stat = 0;
+    int     comm, rank;
+//    mpi_stat = MPI_Init( '', 1 );
+    mpi_stat = MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+    comm =  MPI_Comm_c2f( MPI_COMM_WORLD );
+
+ITG phase = 1;
+MPI_Bcast(&phase, 1, MPI_LONG_LONG, 0 , MPI_COMM_WORLD);
+mpi_stat = MPI_Finalize();
+
  return 0;
       
 }
+
+
+
+/////////////////////
+
+void mpi_calculix() {
+
+    int     mpi_stat = 0;
+    int     comm, rank;
+
+    /* Auxiliary variables. */
+//    int     mpi_stat = 0;
+//    int     comm, rank;
+    mpi_stat = MPI_Init( '', 1 );
+    mpi_stat = MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+    comm =  MPI_Comm_c2f( MPI_COMM_WORLD );
+
+    printf ( "Hello from rank %i", rank );
+    if ( rank < 1 ) { return; }
+
+   /* Matrix data. */
+    MKL_INT n;
+    MKL_INT *ia;
+    MKL_INT *ja;
+    float *a;
+    MKL_INT mtype;
+    MKL_INT nrhs;
+    float *b, *x, *bs, res, res0; /* RHS and solution vectors. */
+
+    /* Internal solver memory pointer pt
+     *       32-bit:      int pt[64] or void *pt[64];
+     *       64-bit: long int pt[64] or void *pt[64]; */
+    void *pt[64] = { 0 };
+
+    /* Cluster Sparse Solver control parameters. */
+    MKL_INT iparm[64] = { 0 };
+    iparm[0]=1;
+    iparm[1]=3;
+
+    MKL_INT maxfct, mnum, msglvl, error;
+
+    /* Auxiliary variables. */
+    float   ddum; /* float dummy   */
+    MKL_INT idum; /* Integer dummy. */
+
+maxfct=1;
+mnum=1;
+
+MKL_INT phase;
+MPI_Bcast(&phase, 1, MPI_LONG_LONG, 0 , MPI_COMM_WORLD);
+printf("Rank %i received phase %d from rank 0\n", rank, phase);
+
+//while(( phase ==12)||(phase==33)||(phase==-1)){
+while(( phase != 1 )){
+
+printf ( "Entering phase %i while loop\n", phase );
+
+FORTRAN ( cluster_sparse_solver, ( pt, &maxfct, &mnum, &mtype, (MKL_INT)&phase, &n, a, ia, ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &comm, &error ));
+
+printf ( "\nCompleted phase %i while loop\n", phase );
+
+MPI_Bcast(&phase, 1, MPI_LONG_LONG, 0 , MPI_COMM_WORLD);
+
+printf("\nRank %i received phase %i from rank 0\n", rank, phase);
+
+} // end while
+
+mpi_stat = MPI_Finalize();
+exit(0);
+
+} // end function
 
 
 
