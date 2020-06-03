@@ -15,13 +15,16 @@
 /*     along with this program; if not, write to the Free Software       */
 /*     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.         */
 
-#ifdef PARDISO
+#ifdef PARDISO_MPI
 
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include "CalculiX.h"
-#include "pardiso.h"
+#include "mkl_pardiso.h"
+#include "mpi.h"
+#include "mkl.h"
+#include "mkl_cluster_sparse_solver.h"
 
 ITG *icolpardiso=NULL,*pointers=NULL,iparm[64];
 long long pt[64];
@@ -38,7 +41,7 @@ void pardiso_factor(double *ad, double *au, double *adb, double *aub,
   char *env;
 /*  char env1[32]; */
   ITG i,j,k,l,maxfct=1,mnum=1,phase=12,nrhs=1,*perm=NULL,mtype,
-      msglvl=0,error=0,*irowpardiso=NULL,kflag,kstart,n,ifortran,
+      msglvl=1,error=0,*irowpardiso=NULL,kflag,kstart,n,ifortran,
       lfortran,index,id,k2;
   ITG ndim,nthread,nthread_v;
   double *b=NULL,*x=NULL;
@@ -68,8 +71,8 @@ void pardiso_factor(double *ad, double *au, double *adb, double *aub,
       if (nthread_v <= nthread) {nthread=nthread_v;}
     }
     if (nthread < 1) {nthread=1;}
-    sprintf(envMKL,"MKL_NUM_THREADS=%" ITGFORMAT "",nthread);  
-    putenv(envMKL);
+    // sprintf(envMKL,"MKL_NUM_THREADS=%" ITGFORMAT "",nthread);  
+    // putenv(envMKL);
     nthread_mkl=nthread;
   }
     
@@ -287,9 +290,22 @@ void pardiso_factor(double *ad, double *au, double *adb, double *aub,
       }
   }
 
-  FORTRAN(pardiso,(pt,&maxfct,&mnum,&mtype,&phase,neq,aupardiso,
-		   pointers,icolpardiso,perm,&nrhs,iparm,&msglvl,
-                   b,x,&error));
+    int     mpi_stat = 0;
+    int     comm, rank;
+    mpi_stat = MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+    comm =  MPI_Comm_c2f( MPI_COMM_WORLD );
+
+    MPI_Bcast(&phase, 1, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
+
+    FORTRAN ( cluster_sparse_solver, ( pt, &maxfct, &mnum, &mtype, &phase,
+                neq, aupardiso , pointers , icolpardiso, perm, &nrhs, iparm, &msglvl, b, x, &comm, &error ));
+    if ( error != 0 )
+    {
+        if ( rank == 0 ) printf ("\nERROR during symbolic factorization: %lli", (long long int)error);
+        mpi_stat = MPI_Finalize();
+        return 1;
+    }
+    if ( rank == 0 ) printf ("\Factorization completed ... ");
 
   return;
 }
@@ -320,9 +336,21 @@ void pardiso_solve(double *b, ITG *neq,ITG *symmetryflag,ITG *nrhs){
 
   NNEW(x,double,*nrhs**neq);
 
-  FORTRAN(pardiso,(pt,&maxfct,&mnum,&mtype,&phase,neq,aupardiso,
-		   pointers,icolpardiso,perm,nrhs,iparm,&msglvl,
-                   b,x,&error));
+    int     mpi_stat = 0;
+    int     comm, rank;
+    mpi_stat = MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+    comm =  MPI_Comm_c2f( MPI_COMM_WORLD );
+
+    MPI_Bcast(&phase, 1, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
+    FORTRAN ( cluster_sparse_solver, ( pt, &maxfct, &mnum, &mtype, &phase,
+                neq, aupardiso , pointers , icolpardiso, perm, &nrhs, iparm, &msglvl, b, x, &comm, &error ));
+    if ( error != 0 )
+    {
+        if ( rank == 0 ) printf ("\nERROR during symbolic factorization: %lli", (long long int)error);
+        mpi_stat = MPI_Finalize();
+        return 1;
+    }
+    if ( rank == 0 ) printf ("\nSolve completed ... "); 
 
   for(i=0;i<*nrhs**neq;i++){b[i]=x[i];}
   SFREE(x);
@@ -333,7 +361,7 @@ void pardiso_solve(double *b, ITG *neq,ITG *symmetryflag,ITG *nrhs){
 void pardiso_cleanup(ITG *neq,ITG *symmetryflag){
 
   ITG maxfct=1,mnum=1,phase=-1,*perm=NULL,nrhs=1,mtype,
-      msglvl=0,error=0;
+      msglvl=1,error=0;
   double *b=NULL,*x=NULL;
 
   if(*symmetryflag==0){
@@ -343,9 +371,25 @@ void pardiso_cleanup(ITG *neq,ITG *symmetryflag){
       mtype=1;
   }
 
-  FORTRAN(pardiso,(pt,&maxfct,&mnum,&mtype,&phase,neq,aupardiso,
-		   pointers,icolpardiso,perm,&nrhs,iparm,&msglvl,
-                   b,x,&error));
+    int     mpi_stat = 0;
+    int     comm, rank;
+    mpi_stat = MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+    comm =  MPI_Comm_c2f( MPI_COMM_WORLD );
+
+    ITG phase = -1;
+    MPI_Bcast(&phase, 1, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
+     printf ( "Entering cleanup phase\n");
+    FORTRAN ( cluster_sparse_solver, ( pt, &maxfct, &mnum, &mtype, &phase,
+                neq, aupardiso , pointers , icolpardiso, perm, &nrhs, iparm, &msglvl, b, x, &comm, &error ));
+     printf ( "Leaving cleanup phase\n");
+
+    if ( error != 0 )
+    {
+        if ( rank == 0 ) printf ("\nERROR during symbolic factorization: %lli", (long long int)error);
+        mpi_stat = MPI_Finalize();
+        return 1;
+    }
+    if ( rank == 0 ) printf ("\nCleanup completed ... ");
 
   SFREE(icolpardiso);
   SFREE(aupardiso);

@@ -28,9 +28,9 @@ void pardiso_solve(double *b,ITG *neq,ITG *symmetryflag,ITG *nrhs);
 
 void pardiso_cleanup(ITG *neq,ITG *symmetryflag);
 
-void FORTRAN(pardiso,(long long *pt,ITG *maxfct,ITG *mnum,ITG *mtype,ITG *phase,
+void FORTRAN(cluster_sparse_solver,(long long *pt,ITG *maxfct,ITG *mnum,ITG *mtype,ITG *phase,
                    ITG *neq,double *aupardiso,ITG *pointers,ITG *irowpardiso,
                    ITG *perm,ITG *nrhs,ITG *iparm,ITG *msglvl,double *b,
-                   double *x,ITG *error));
+                   double *x,int *comm,ITG *error));
 
 char envMKL[32];
