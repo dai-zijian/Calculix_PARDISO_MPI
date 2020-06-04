@@ -376,7 +376,6 @@ void pardiso_cleanup(ITG *neq,ITG *symmetryflag){
     mpi_stat = MPI_Comm_rank( MPI_COMM_WORLD, &rank );
     comm =  MPI_Comm_c2f( MPI_COMM_WORLD );
 
-    ITG phase = -1;
     MPI_Bcast(&phase, 1, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
      printf ( "Entering cleanup phase\n");
     FORTRAN ( cluster_sparse_solver, ( pt, &maxfct, &mnum, &mtype, &phase,
